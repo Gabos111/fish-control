@@ -1,0 +1,15 @@
+# Virtual environments
+venv-fish/
+__pycache__/
+*.py[cod]
+
+# Logs and data
+logs/
+*.csv
+
+# Build artifacts
+build/
+*.o
+
+# System files
+.DS_Store

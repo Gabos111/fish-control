@@ -1,0 +1,8 @@
+amplitude_fin: 15.0
+amplitude_tail: 20.0
+frequency: 0.5
+logging: false
+mode: symmetric_sin
+phase: 0.0
+phi_fin: 0.0
+phi_tail: 0.0
