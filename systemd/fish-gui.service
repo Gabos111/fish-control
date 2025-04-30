@@ -1,0 +1,12 @@
+[Unit]
+Description=Fish GUI (Tkinter UI)
+After=network-online.target fish.service
+
+[Service]
+User=fish_pizero
+WorkingDirectory=/home/fish_pizero/projects/fish-control
+ExecStart=/home/fish_pizero/venv-fish/bin/python /home/fish_pizero/projects/fish-control/fish_control/ui.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

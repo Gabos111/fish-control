@@ -1,0 +1,17 @@
+[Unit]
+Description=Fish robot controller (C++ core)
+
+
+[Service]
+WorkingDirectory=/home/fish_pizero/projects/fish-control
+User=root
+AmbientCapabilities=CAP_SYS_RAWIO CAP_SYS_ADMIN
+CapabilityBoundingSet=CAP_SYS_RAWIO   CAP_SYS_ADMIN
+Environment=LD_LIBRARY_PATH=/usr/local/lib
+StandardOutput=journal
+StandardError=journal
+ExecStart=/usr/local/bin/fish_control
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -1,89 +1,111 @@
-# fish_control/ui.py
+#!/usr/bin/env python3
 import os
 import yaml
-from flask import Flask, request, redirect, render_template_string
+import tkinter as tk
+from tkinter import ttk, messagebox
 
-# Path to your YAML
+# Path to cfg.yaml
 CFG_PATH = os.path.abspath(os.path.join(
     os.path.dirname(__file__), "..", "cfg.yaml"
 ))
 
-app = Flask(__name__)
+class FishControlGUI(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Fish Control Center")
+        self.resizable(False, False)
+        self.load_cfg()
+        self.create_widgets()
 
-TEMPLATE = """
-<!doctype html>
-<title>Fish-Control GUI</title>
-<style>
-  body { font-size: 18px; font-family: sans-serif; margin: 20px; }
-  .column { float: left; width: 48%; padding: 1%; box-sizing: border-box; }
-  .clearfix::after { content: ""; clear: both; display: table; }
-  label { display: block; margin-bottom: 8px; }
-  button { margin-top: 10px; padding: 8px 16px; font-size: 1em; }
-</style>
-<h1>Fish-Control Parameters</h1>
-<form method="post">
-  <div class="clearfix">
-    <div class="column">
-      <label>Mode:
-        <select name="mode">
-          {% for m in ["standby","test","symmetric_sin"] %}
-          <option value="{{m}}" {% if cfg.mode==m %}selected{% endif %}>{{m}}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <label>Amplitude Tail: <input name="amplitude_tail" type="number" step="0.1" value="{{cfg.amplitude_tail}}"></label>
-      <label>Amplitude Fin:  <input name="amplitude_fin"  type="number" step="0.1" value="{{cfg.amplitude_fin}}"></label>
-      <label>Frequency:      <input name="frequency"      type="number" step="0.01" value="{{cfg.frequency}}"></label>
-      <label>Phase:          <input name="phase"          type="number" step="0.01" value="{{cfg.phase}}"></label>
-    </div>
-    <div class="column">
-      <label>Phi Tail (test):<input name="phi_tail" type="number" step="0.1" value="{{cfg.phi_tail}}"></label>
-      <label>Phi Fin  (test):<input name="phi_fin"  type="number" step="0.1" value="{{cfg.phi_fin}}"></label>
-      <button type="submit" name="save_cfg">Save Config</button>
-      <button type="submit" name="toggle_logging">
-        {% if cfg.logging %}Stop Logging{% else %}Start Logging{% endif %}
-      </button>
-    </div>
-  </div>
-</form>
-"""
+    def load_cfg(self):
+        try:
+            with open(CFG_PATH) as f:
+                self.cfg = yaml.safe_load(f)
+        except Exception:
+            self.cfg = {
+                "mode": "standby",
+                "amplitude_tail": 20.0,
+                "amplitude_fin": 20.0,
+                "frequency": 0.3,
+                "phase": 0.0,
+                "phi_tail": 0.0,
+                "phi_fin": 0.0,
+                "logging": False
+            }
 
-@app.route("/", methods=["GET","POST"])
-def index():
-    if request.method == "POST":
-        old_cfg = yaml.safe_load(open(CFG_PATH))
-        # build updated config
+    def save_cfg(self):
+        # Build new config from widget values
         new_cfg = {
-            "mode": request.form["mode"],
-            "amplitude_tail": float(request.form["amplitude_tail"]),
-            "amplitude_fin":  float(request.form["amplitude_fin"]),
-            "frequency":      float(request.form["frequency"]),
-            "phase":          float(request.form["phase"]),
+            "mode": self.mode_var.get(),
+            "amplitude_tail": float(self.ampt_var.get()),
+            "amplitude_fin": float(self.ampf_var.get()),
+            "frequency": float(self.freq_var.get()),
+            "phase": float(self.phase_var.get()),
+            "phi_tail": float(self.phit_var.get()),
+            "phi_fin": float(self.phif_var.get()),
+            "logging": self.logging
         }
-        new_cfg["phi_tail"] = float(request.form.get("phi_tail", 0.0))
-        new_cfg["phi_fin"]  = float(request.form.get("phi_fin",  0.0))
-        # toggle logging only if that button was pressed
-        if "toggle_logging" in request.form:
-            new_cfg["logging"] = not old_cfg.get("logging", False)
-        else:
-            new_cfg["logging"] = old_cfg.get("logging", False)
-        with open(CFG_PATH, "w") as f:
-            yaml.safe_dump(new_cfg, f)
-        return redirect("/")
+        try:
+            with open(CFG_PATH, "w") as f:
+                yaml.safe_dump(new_cfg, f)
+            messagebox.showinfo("Success", "Configuration saved.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save: {e}")
 
-    # GET: load current cfg
-    cfg = yaml.safe_load(open(CFG_PATH))
-    # allow `.mode`, `.amplitude_tail` in template
-    class Cfg: pass
-    c = Cfg()
-    for k,v in cfg.items():
-        setattr(c, k, v)
-    # fill defaults for missing keys
-    for key, val in [("phi_tail", 0.0), ("phi_fin", 0.0)]:
-        setattr(c, key, cfg.get(key, val))
-    setattr(c, "logging", cfg.get("logging", False))
-    return render_template_string(TEMPLATE, cfg=c)
+    def toggle_logging(self):
+        self.logging = not self.logging
+        self.log_btn.config(text="Stop Logging" if self.logging else "Start Logging")
+
+    def create_widgets(self):
+        frame = ttk.Frame(self, padding=10)
+        frame.grid()
+
+        # Left column
+        ttk.Label(frame, text="Mode:").grid(row=0, column=0, sticky="w")
+        self.mode_var = tk.StringVar(value=self.cfg.get("mode"))
+        ttk.Combobox(frame, textvariable=self.mode_var, values=["standby","test","symmetric_sin"], state="readonly")\
+            .grid(row=0, column=1, sticky="ew")
+
+        # Numeric parameters
+        self.ampt_var = tk.DoubleVar(value=self.cfg.get("amplitude_tail"))
+        ttk.Label(frame, text="Amplitude Tail:").grid(row=1, column=0, sticky="w")
+        ttk.Entry(frame, textvariable=self.ampt_var).grid(row=1, column=1, sticky="ew")
+
+        self.ampf_var = tk.DoubleVar(value=self.cfg.get("amplitude_fin"))
+        ttk.Label(frame, text="Amplitude Fin:").grid(row=2, column=0, sticky="w")
+        ttk.Entry(frame, textvariable=self.ampf_var).grid(row=2, column=1, sticky="ew")
+
+        self.freq_var = tk.DoubleVar(value=self.cfg.get("frequency"))
+        ttk.Label(frame, text="Frequency:").grid(row=3, column=0, sticky="w")
+        ttk.Entry(frame, textvariable=self.freq_var).grid(row=3, column=1, sticky="ew")
+
+        self.phase_var = tk.DoubleVar(value=self.cfg.get("phase"))
+        ttk.Label(frame, text="Phase:").grid(row=4, column=0, sticky="w")
+        ttk.Entry(frame, textvariable=self.phase_var).grid(row=4, column=1, sticky="ew")
+
+        # Test angles
+        self.phit_var = tk.DoubleVar(value=self.cfg.get("phi_tail"))
+        ttk.Label(frame, text="Phi Tail (test):").grid(row=5, column=0, sticky="w")
+        ttk.Entry(frame, textvariable=self.phit_var).grid(row=5, column=1, sticky="ew")
+
+        self.phif_var = tk.DoubleVar(value=self.cfg.get("phi_fin"))
+        ttk.Label(frame, text="Phi Fin (test):").grid(row=6, column=0, sticky="w")
+        ttk.Entry(frame, textvariable=self.phif_var).grid(row=6, column=1, sticky="ew")
+
+        # Logging
+        self.logging = self.cfg.get("logging", False)
+        self.log_btn = ttk.Button(frame, text=("Stop Logging" if self.logging else "Start Logging"),
+                                  command=self.toggle_logging)
+        self.log_btn.grid(row=7, column=0, columnspan=2, pady=(10, 0), sticky="ew")
+
+        # Apply button
+        ttk.Button(frame, text="Apply", command=self.save_cfg)\
+            .grid(row=8, column=0, columnspan=2, pady=(5, 0), sticky="ew")
+
+        # Expand columns
+        frame.columnconfigure(0, weight=1)
+        frame.columnconfigure(1, weight=3)
 
 if __name__ == "__main__":
-    # only for local testing; 0.0.0.0 makes it reachable from your Mac
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app = FishControlGUI()
+    app.mainloop()

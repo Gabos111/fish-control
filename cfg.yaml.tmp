@@ -3,6 +3,6 @@ amplitude_tail: 20.0
 frequency: 0.5
 logging: false
 mode: standby
-phase: 90.0
+phase: 0.0
 phi_fin: 0.0
-phi_tail: 10.0
+phi_tail: 0.0
