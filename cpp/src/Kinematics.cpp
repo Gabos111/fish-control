@@ -3,11 +3,13 @@
 
 // Linear mapping from fin deflection to servo PWM angle
 double fin_to_servo(double phi) {
-    // Linear calibration derived experimentally (Arduino reference):
-    // servoAngle[deg] = ((phi[rad] - 0.070) / 1.091) + 90
-    double theta = ((phi - 0.070) / 1.091) + 90.0;
-    if (theta < 0.0)   theta = 0.0;
-    if (theta > 180.0) theta = 180.0;
+    float k = 0.6682; // transmission ratio (servo-gear-pulley)
+    double theta = phi/k + 90.0;
+    if (theta < 0.0) 
+        theta = 0.0;
+    if (theta > 180) 
+        theta = 180.0;
+
     return theta;
 }
 
