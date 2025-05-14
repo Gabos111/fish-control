@@ -3,8 +3,13 @@
 
 // Linear mapping from fin deflection to servo PWM angle
 double fin_to_servo(double phi) {
-    float k = 0.6682; // transmission ratio (servo-gear-pulley)
+
+    float gear_ratio = 21.0/26.0; // gear ratio (servo-gear)
+    float r_servo_pulley = 7.25; // radius of servo pulley (mm)
+    float r_fin_pulley = 17.5; // radius of fin pulley (mm)
+    float k = gear_ratio*(r_servo_pulley/r_fin_pulley); // transmission ratio (servo-gear-pulley)
     double theta = phi/k + 90.0;
+
     if (theta < 0.0) 
         theta = 0.0;
     if (theta > 180) 
